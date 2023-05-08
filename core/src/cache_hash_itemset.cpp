@@ -3,7 +3,7 @@
 using namespace std;
 
 // the implementation of the memory wiping for the current cache is similar to the one described in cache_hash_cover
-Cache_Hash_Itemset::Cache_Hash_Itemset(Depth maxdepth, WipeType wipe_type, int maxcachesize, float wipe_factor) : Cache(maxdepth, wipe_type, maxcachesize) {
+Cache_Hash_Itemset::Cache_Hash_Itemset(Depth maxdepth, WipeType wipe_type, int maxcachesize, float wipe_factor, bool depthAgnostic) : Cache(maxdepth, wipe_type, maxcachesize, depthAgnostic) {
     root = new HashItemsetNode();
 }
 

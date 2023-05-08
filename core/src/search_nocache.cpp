@@ -15,8 +15,11 @@ Search_nocache::Search_nocache(NodeDataManager *nodeDataManager, bool infoGain, 
                                float maxError,
                                bool specialAlgo,
                                bool stopAfterError,
-                               bool use_ub) :
-        Search_base(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit, cache, maxError, specialAlgo, stopAfterError), use_ub(use_ub) {}
+                               bool use_ub,
+                               bool from_cpp,
+                               int k,
+                               function<float(int)> *split_penalty_callback_pointer) :
+        Search_base(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit, cache, maxError, specialAlgo, stopAfterError, from_cpp, k, split_penalty_callback_pointer), use_ub(use_ub) {}
 
 Search_nocache::~Search_nocache() {}
 
@@ -126,6 +129,12 @@ Error Search_nocache::recurse(Attribute last_added,
 
     auto leaf = nodeDataManager->computeLeafInfo();
 
+    // (sullivanc19) compute penalty for splitting at this depth
+    float splitPenalty = 0.0;
+    if (split_penalty_callback_pointer != nullptr) {
+        splitPenalty = (*split_penalty_callback_pointer)(depth);
+    }
+
     // the solution can be inferred without computation
     if (depth == maxdepth || nodeDataManager->cover->getSupport() < 2 * minsup || leaf.error == 0 || timeLimitReached) {
         Logger::showMessageAndReturn("we backtrack with leaf error = ", leaf.error, " new ub = ", ub);
@@ -181,7 +190,7 @@ Error Search_nocache::recurse(Attribute last_added,
         Error secondError = recurse(attr, next_attributes, depth + 1, child_ub);
         nodeDataManager->cover->backtrack();
 
-        Error feature_error = firstError + secondError;
+        Error feature_error = firstError + secondError + splitPenalty;
         if (feature_error < best_error) {
             best_error = feature_error;
             ub = feature_error;

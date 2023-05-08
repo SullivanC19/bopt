@@ -22,7 +22,10 @@ public:
                    float maxError = NO_ERR,
                    bool specialAlgo = true,
                    bool stopAfterError = false,
-                   bool use_ub = true);
+                   bool use_ub = true,
+                   bool from_cpp = true,
+                   int k = 0,
+                   function<float(int)> *split_penalty_callback_pointer = nullptr);
 
     void run();
     Error recurse(Attribute last_added, Attributes &attributes_to_visit, Depth depth, Error ub);

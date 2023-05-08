@@ -78,3 +78,6 @@ cdef public float* call_python_support_error_class_function(py_function, RCover 
 cdef public float call_python_tid_error_function(py_function, RCover *ar):
     return py_function(wrap_array(ar, True))
 
+cdef public float call_python_split_penalty_function(py_function, int depth):
+    return py_function(depth)
+

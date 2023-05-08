@@ -3,10 +3,12 @@
 
 using namespace std;
 
-Cache_Hash_Cover::Cache_Hash_Cover(Depth maxdepth, WipeType wipe_type, int maxcachesize, float wipe_factor) :
-        Cache(maxdepth, wipe_type, maxcachesize), wipe_factor( wipe_factor) {
+Cache_Hash_Cover::Cache_Hash_Cover(Depth maxdepth, WipeType wipe_type, int maxcachesize, float wipe_factor, bool depthAgnostic) :
+        Cache(maxdepth, wipe_type, maxcachesize, depthAgnostic), wipe_factor( wipe_factor) {
     root = new HashCoverNode();
-    store = new unordered_map<MyCover, HashCoverNode *>[maxdepth];
+
+    int storeSize = depthAgnostic ? 1 : maxdepth;
+    store = new unordered_map<MyCover, HashCoverNode *>[storeSize];
 
     // reserve the size needed to keep the iterators
     /*if (this->maxcachesize > NO_CACHE_LIMIT) {
@@ -26,6 +28,9 @@ pair<Node *, bool> Cache_Hash_Cover::insert(NodeDataManager *nodeDataManager, in
             wipe();
         }*/
         auto *node = new HashCoverNode();
+
+        if (depthAgnostic) depth = 1;
+        
         auto info = store[depth-1].insert({MyCover(nodeDataManager->cover), node});
         if (not info.second) { // if node already exists
             delete node;
@@ -41,12 +46,16 @@ pair<Node *, bool> Cache_Hash_Cover::insert(NodeDataManager *nodeDataManager, in
 }
 
 Node *Cache_Hash_Cover::get(NodeDataManager *nodeDataManager, int depth) {
+    if (depthAgnostic) depth = 1;
+
     auto it = store[depth-1].find(MyCover(nodeDataManager->cover));
     if (it != store[depth-1].end()) return it->second;
     else return nullptr;
 }
 
 int Cache_Hash_Cover::getCacheSize() {
+    if (depthAgnostic) return store[0].size();
+
     int val = 0;
     for (int i = 0; i < maxdepth; ++i) {
         val += store[i].size();

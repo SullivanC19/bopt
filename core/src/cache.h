@@ -31,7 +31,7 @@ struct Node {
 /*This class represents the cache structure saved during the tree search algorithm*/
 class Cache {
 public:
-    Cache(Depth maxdepth, WipeType wipe_type, Size maxcachesize);
+    Cache(Depth maxdepth, WipeType wipe_type, Size maxcachesize, bool depthAgnostic);
     virtual ~Cache() {}
 
     Node *root; // the root node of the tree
@@ -39,6 +39,7 @@ public:
     Size maxcachesize; // the maximum size allowed by the cache system
     Depth maxdepth;
     WipeType wipe_type;
+    bool depthAgnostic;
 
     virtual pair<Node*, bool> insert ( Itemset &itemset ) { return {nullptr, false}; } // add a node to the tree
     virtual pair<Node*, bool> insert ( NodeDataManager*, int depth = 0) { return {nullptr, false}; }

@@ -75,7 +75,8 @@ public:
     NodeDataManager(RCover* cover,
           function<vector<float>(RCover *)> *tids_error_class_callback = nullptr,
           function<vector<float>(RCover *)> *supports_error_class_callback = nullptr,
-          function<float(RCover *)> *tids_error_callback = nullptr);
+          function<float(RCover *)> *tids_error_callback = nullptr,
+          function<vector<float>(RCover *)> *supports_error_lb_class_callback = nullptr);
 
     virtual ~NodeDataManager();
 
@@ -89,13 +90,14 @@ public:
 
     virtual LeafInfo computeLeafInfo(ErrorVals itemsetSupport);
 
-    virtual bool updateData(Node *best, Error upperBound, Attribute attribute, Node *left, Node *right, Itemset = Itemset()) = 0;
+    virtual bool updateData(Node *best, Error upperBound, Attribute attribute, Node *left, Node *right, float splitPenalty, Itemset = Itemset()) = 0;
 
 
     RCover* cover;
     function<vector<float>(RCover *)> *tids_error_class_callback = nullptr;
     function<vector<float>(RCover *)> *supports_error_class_callback = nullptr;
     function<float(RCover *)> *tids_error_callback = nullptr;
+    function<vector<float>(RCover *)> *supports_error_lb_class_callback = nullptr;
 
 };
 

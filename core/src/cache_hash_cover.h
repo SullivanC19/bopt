@@ -59,7 +59,7 @@ struct std::equal_to<MyCover> {
 
 class Cache_Hash_Cover : public Cache {
 public:
-    Cache_Hash_Cover(Depth maxdepth, WipeType wipe_type, int maxcachesize=0, float wipe_factor=.5f);
+    Cache_Hash_Cover(Depth maxdepth, WipeType wipe_type, int maxcachesize=0, float wipe_factor=.5f, bool depthAgnostic=false);
     ~Cache_Hash_Cover() {
         delete root;
         for (int i = 0; i < maxdepth; ++i) {

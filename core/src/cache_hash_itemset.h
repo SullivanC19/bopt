@@ -36,7 +36,7 @@ struct std::equal_to<Itemset> {
 // the implementation of the memory wiping for the current cache is similar to the one described in cache_hash_cover
 class Cache_Hash_Itemset : public Cache {
 public:
-    Cache_Hash_Itemset(Depth maxdepth, WipeType wipe_type, int maxcachesize=0, float wipe_factor=.5f);
+    Cache_Hash_Itemset(Depth maxdepth, WipeType wipe_type, int maxcachesize=0, float wipe_factor=.5f, bool depthAgnostic=false);
     ~Cache_Hash_Itemset() {
         delete root;
         for(auto &elt: store) delete elt.second;

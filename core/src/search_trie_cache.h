@@ -44,7 +44,9 @@ public:
                        bool similarlb = false,
                        bool dynamic_branching = false,
                        bool similar_for_branching = true,
-                       bool from_cpp = true);
+                       bool from_cpp = true,
+                       int k = 0,
+                       function<float(int)> *split_penalty_callback_pointer = nullptr);
 
     ~Search_trie_cache();
 

@@ -19,13 +19,19 @@ string launch(ErrorVals supports,
               function<vector<float>(RCover *)> tids_error_class_callback,
               function<vector<float>(RCover *)> supports_error_class_callback,
               function<float(RCover *)> tids_error_callback,
+              function<vector<float>(RCover *)> supports_error_lb_class_callback,
+              function<float(int)> split_penalty_callback,
               float *in_weights,
               bool tids_error_class_is_null,
               bool supports_error_class_is_null,
               bool tids_error_is_null,
+              bool supports_error_lb_class_is_null,
+              bool split_penalty_is_null,
+              bool depthAgnostic,
               bool infoGain,
               bool infoAsc,
               bool repeatSort,
+              int k,
               int timeLimit,
               bool verbose_param,
               CacheType cache_type,
@@ -49,6 +55,13 @@ string launch(ErrorVals supports,
 
     function<float(RCover *)> *tids_error_callback_pointer = &tids_error_callback;
     if (tids_error_is_null) tids_error_callback_pointer = nullptr;
+
+    function<vector<float>(RCover *)> *supports_error_lb_class_callback_pointer = &supports_error_lb_class_callback;
+    if (supports_error_lb_class_is_null) supports_error_lb_class_callback_pointer = nullptr;
+    
+
+    function<float(int)> *split_penalty_callback_pointer = &split_penalty_callback;
+    if (split_penalty_is_null) split_penalty_callback_pointer = nullptr;
 
     GlobalParams::getInstance()->verbose = verbose_param;
 //    if (verbose_param) Logger::setTrue();
@@ -86,9 +99,9 @@ string launch(ErrorVals supports,
                 GlobalParams::getInstance()->out += "Cache boundary is not yet supported for cache based on hashtable and/or using cover-based keys\n";
                 max_cache_size = NO_CACHE_LIMIT;
             }
-            cache = new Cache_Hash_Cover(maxdepth, wipe_type, max_cache_size, wipe_factor);
-            nodeDataManager = new NodeDataManager_Cover(cover, tids_error_class_callback_pointer, supports_error_class_callback_pointer, tids_error_callback_pointer);
-            searcher = new Search_cover_cache(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit, cache, maxError <= 0 ? NO_ERR : maxError, useSpecial, maxError <= 0 ? false : stopAfterError, similarlb, dynamic_branching, similar_for_branching, from_cpp);
+            cache = new Cache_Hash_Cover(maxdepth, wipe_type, max_cache_size, wipe_factor, depthAgnostic);
+            nodeDataManager = new NodeDataManager_Cover(cover, tids_error_class_callback_pointer, supports_error_class_callback_pointer, tids_error_callback_pointer, supports_error_lb_class_callback_pointer);
+            searcher = new Search_cover_cache(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit, cache, maxError <= 0 ? NO_ERR : maxError, useSpecial, maxError <= 0 ? false : stopAfterError, similarlb, dynamic_branching, similar_for_branching, from_cpp, k, split_penalty_callback_pointer);
             solution = new Solution_Cover(searcher);
         }
         else {
@@ -99,7 +112,7 @@ string launch(ErrorVals supports,
                     GlobalParams::getInstance()->out += "Cache boundary is not yet supported for cache based on hashtable and/or using cover-based keys\n";
                     max_cache_size = NO_CACHE_LIMIT;
                 }
-                cache = new Cache_Hash_Itemset(maxdepth, wipe_type, max_cache_size, wipe_factor);
+                cache = new Cache_Hash_Itemset(maxdepth, wipe_type, max_cache_size, wipe_factor, depthAgnostic);
             }
             else { // if (cache_type == CacheTrieItemset)
                 GlobalParams::getInstance()->out += "Cache type: Trie\n";
@@ -117,11 +130,11 @@ string launch(ErrorVals supports,
                             GlobalParams::getInstance()->out += "Wipe criterion: All nodes\n";
                     }
                 }
-                cache = new Cache_Trie(maxdepth, wipe_type, max_cache_size, wipe_factor);
+                cache = new Cache_Trie(maxdepth, wipe_type, max_cache_size, wipe_factor, depthAgnostic);
             }
             
-            nodeDataManager = new NodeDataManager_Trie(cover, tids_error_class_callback_pointer, supports_error_class_callback_pointer, tids_error_callback_pointer);
-            searcher = new Search_trie_cache(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit, cache, maxError <= 0 ? NO_ERR : maxError, useSpecial, maxError <= 0 ? false : stopAfterError, similarlb, dynamic_branching, similar_for_branching, from_cpp);
+            nodeDataManager = new NodeDataManager_Trie(cover, tids_error_class_callback_pointer, supports_error_class_callback_pointer, tids_error_callback_pointer, supports_error_lb_class_callback_pointer);
+            searcher = new Search_trie_cache(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit, cache, maxError <= 0 ? NO_ERR : maxError, useSpecial, maxError <= 0 ? false : stopAfterError, similarlb, dynamic_branching, similar_for_branching, from_cpp, k, split_penalty_callback_pointer);
             solution = new Solution_Trie(searcher);
         }
         if (from_cpp) { cout << GlobalParams::getInstance()->out; GlobalParams::getInstance()->out = ""; }
@@ -136,8 +149,8 @@ string launch(ErrorVals supports,
     else {
         GlobalParams::getInstance()->out += "Storage key: No cache";
         if (from_cpp) { cout << GlobalParams::getInstance()->out; GlobalParams::getInstance()->out = ""; }
-        nodeDataManager = new NodeDataManager_Trie(cover, tids_error_class_callback_pointer, supports_error_class_callback_pointer, tids_error_callback_pointer);
-        searcher = new Search_nocache(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit,nullptr, maxError <= 0 ? NO_ERR : maxError, useSpecial,maxError > 0 && stopAfterError, use_ub);
+        nodeDataManager = new NodeDataManager_Trie(cover, tids_error_class_callback_pointer, supports_error_class_callback_pointer, tids_error_callback_pointer, supports_error_lb_class_callback_pointer);
+        searcher = new Search_nocache(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit,nullptr, maxError <= 0 ? NO_ERR : maxError, useSpecial,maxError > 0 && stopAfterError, use_ub, from_cpp, k, split_penalty_callback_pointer);
         searcher->run(); // perform the search
         GlobalParams::getInstance()->out += "runtime = " + to_string(duration<float>(high_resolution_clock::now() - GlobalParams::getInstance()->startTime).count()) + "\n";
     }

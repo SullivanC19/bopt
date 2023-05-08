@@ -13,8 +13,10 @@ Search_trie_cache::Search_trie_cache(NodeDataManager *nodeDataManager, bool info
                                      bool similarlb,
                                      bool dynamic_branching,
                                      bool similar_for_branching,
-                                     bool from_cpp) :
-        Search_base(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit, cache, maxError, specialAlgo, stopAfterError, from_cpp), similarlb(similarlb), dynamic_branching(dynamic_branching), similar_for_branching(similar_for_branching) {}
+                                     bool from_cpp,
+                                     int k,
+                                     function<float(int)> *split_penalty_callback_pointer) :
+        Search_base(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit, cache, maxError, specialAlgo, stopAfterError, from_cpp, k, split_penalty_callback_pointer), similarlb(similarlb), dynamic_branching(dynamic_branching), similar_for_branching(similar_for_branching) {}
 
 Search_trie_cache::~Search_trie_cache(){};
 
@@ -346,6 +348,18 @@ pair<Node*,HasInter> Search_trie_cache::recurse(const Itemset &itemset,
 
     if (timeLimitReached) { *nodeError = leafError; return {node, true}; }
 
+    // (sullivanc19) leaf error might be lower than that of children with other objectives
+    if (leafError <= ub) {
+        ub = leafError;
+        *nodeError = leafError;
+    }
+
+    // (sullivanc19) compute penalty for splitting at this depth
+    float splitPenalty = 0.0;
+    if (split_penalty_callback_pointer != nullptr) {
+        splitPenalty = (*split_penalty_callback_pointer)(depth);
+    }
+
     // if we can't get solution without computation, we compute the next candidates to perform the search
     Attributes next_attributes = getSuccessors(next_candidates, last_added_attr, itemset, node);
 
@@ -357,9 +371,12 @@ pair<Node*,HasInter> Search_trie_cache::recurse(const Itemset &itemset,
     }
 
     SimilarVals similar_db1, similar_db2; // parameters for similarity lower bound
-    Error minlb = NO_ERR; // in case solution is not found, the minimum of lb of each attribute(sum per item) can be used as a lb for the current node
+    Error minlb = leafError; // in case solution is not found, the minimum of lb of each attribute(sum per item) can be used as a lb for the current node
     Error child_ub = ub; // upper bound for the first child (item)
     bool first_item, second_item; // variable to store the order to explore items of features
+
+    int f = next_attributes.size();
+    if (0 < k and k < f) f = k;
 
     for(const auto attr : next_attributes) {
         Logger::showMessageAndReturn("\n\nWe are evaluating the attribute : ", attr);
@@ -422,9 +439,9 @@ pair<Node*,HasInter> Search_trie_cache::recurse(const Itemset &itemset,
             child_nodes[first_item]->data = nodeDataManager->initData();
             Logger::showMessageAndReturn("Newly created node node. leaf error = ", child_nodes[first_item]->data->leafError);
         } else Logger::showMessageAndReturn("The node already exists");
-        child_nodes[first_item]->data->lowerBound = first_lb; // the best lb between the computed and the saved one is selected
+        child_nodes[first_item]->data->lowerBound = max(child_nodes[first_item]->data->lowerBound, first_lb); // the best lb between the computed and the saved one is selected
         
-        pair<Node*, HasInter> node_inter = recurse(itemsets[first_item], item(attr, first_item), child_nodes[first_item], node_state.is_new, next_attributes,  depth + 1, child_ub - second_lb, similar_db1, similar_db2); // perform the search for the first item
+        pair<Node*, HasInter> node_inter = recurse(itemsets[first_item], item(attr, first_item), child_nodes[first_item], node_state.is_new, next_attributes,  depth + 1, child_ub - second_lb - splitPenalty, similar_db1, similar_db2); // perform the search for the first item
         child_nodes[first_item] = node_inter.get_node;
         if (node_state.is_new or node_inter.has_intersected) {
             if (similarlb) {
@@ -441,7 +458,7 @@ pair<Node*,HasInter> Search_trie_cache::recurse(const Itemset &itemset,
         Error firstError = child_nodes[first_item]->data->error;
         Itemset().swap(itemsets[first_item]); // free the vector memory representing the first itemset
 
-        if (nodeDataManager->canimprove(child_nodes[first_item]->data, child_ub - second_lb)) { // perform search on the second item
+        if (nodeDataManager->canimprove(child_nodes[first_item]->data, child_ub - second_lb - splitPenalty)) { // perform search on the second item
             itemsets[second_item] = addItem(itemset, item(attr, second_item), false);
             node_state = cache->insert(itemsets[second_item]);
             child_nodes[second_item] = node_state.get_node;
@@ -450,10 +467,10 @@ pair<Node*,HasInter> Search_trie_cache::recurse(const Itemset &itemset,
                 child_nodes[second_item]->data = nodeDataManager->initData();
                 Logger::showMessageAndReturn("Newly created node node. leaf error = ", child_nodes[second_item]->data->leafError);
             } else Logger::showMessageAndReturn("The node already exists");
-            child_nodes[second_item]->data->lowerBound = second_lb; // the best lb between the computed and the saved ones is selected
+            child_nodes[second_item]->data->lowerBound = max(child_nodes[second_item]->data->lowerBound, second_lb); // the best lb between the computed and the saved ones is selected
             Error remainUb = child_ub - firstError; // bound for the second child (item)
 
-            node_inter = recurse(itemsets[second_item], item(attr, second_item), child_nodes[second_item], node_state.is_new, next_attributes,  depth + 1, remainUb, similar_db1, similar_db2); // perform the search for the second item
+            node_inter = recurse(itemsets[second_item], item(attr, second_item), child_nodes[second_item], node_state.is_new, next_attributes,  depth + 1, remainUb - splitPenalty, similar_db1, similar_db2); // perform the search for the second item
 
             child_nodes[second_item] = node_inter.get_node;
             if (node_state.is_new or node_inter.has_intersected) {
@@ -471,9 +488,9 @@ pair<Node*,HasInter> Search_trie_cache::recurse(const Itemset &itemset,
             Error secondError = child_nodes[second_item]->data->error;
             Itemset().swap(itemsets[second_item]); // fre the vector memory representing the second itemset
 
-            Error feature_error = firstError + secondError;
+            Error feature_error = firstError + secondError + splitPenalty;
 
-            bool hasUpdated = nodeDataManager->updateData(node, child_ub, attr, child_nodes[NEG_ITEM], child_nodes[POS_ITEM], itemset);
+            bool hasUpdated = nodeDataManager->updateData(node, child_ub, attr, child_nodes[NEG_ITEM], child_nodes[POS_ITEM], splitPenalty, itemset);
             if (hasUpdated) {
                 child_ub = feature_error;
                 Logger::showMessageAndReturn("after this attribute ", attr, ", node error=", *nodeError, " and ub=", child_ub);
@@ -489,11 +506,13 @@ pair<Node*,HasInter> Search_trie_cache::recurse(const Itemset &itemset,
         }
         else { //we do not attempt the second child, so we use its lower bound
             // if the first error is foud, we use it. otherwise, we use its lower bound.
-            if (floatEqual(firstError, NO_ERR)) minlb = min(minlb, child_nodes[first_item]->data->lowerBound + second_lb);
-            else minlb = min(minlb, firstError + second_lb);
+            if (floatEqual(firstError, NO_ERR)) minlb = min(minlb, child_nodes[first_item]->data->lowerBound + second_lb + splitPenalty);
+            else minlb = min(minlb, firstError + second_lb + splitPenalty);
         }
 
         if (stopAfterError and depth == 0 and ub < NO_ERR and *nodeError < ub) break;
+
+        if (--f == 0) break; // we have reached the maximum number of attributes to visit
     }
     ((TrieNodeData*)(node->data))->curr_test = -1;
 

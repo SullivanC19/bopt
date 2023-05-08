@@ -156,6 +156,9 @@ class DL85Predictor(BaseEstimator):
             min_sup=1,
             error_function=None,
             fast_error_function=None,
+            fast_error_lb_function=None,
+            split_penalty_function=None,
+            depth_agnostic=False,
             max_error=0,
             stop_after_better=False,
             time_limit=0,
@@ -163,6 +166,7 @@ class DL85Predictor(BaseEstimator):
             desc=False,
             asc=False,
             repeat_sort=False,
+            k=0,
             leaf_value_function=None,
             quiet=True,
             print_output=False,
@@ -182,6 +186,9 @@ class DL85Predictor(BaseEstimator):
         self.sample_weight = []
         self.error_function = error_function
         self.fast_error_function = fast_error_function
+        self.fast_error_lb_function = fast_error_lb_function
+        self.split_penalty_function = split_penalty_function
+        self.depth_agnostic = depth_agnostic
         self.max_error = max_error
         self.stop_after_better = stop_after_better
         self.time_limit = time_limit
@@ -189,6 +196,7 @@ class DL85Predictor(BaseEstimator):
         self.desc = desc
         self.asc = asc
         self.repeat_sort = repeat_sort
+        self.k = k
         self.leaf_value_function = leaf_value_function
         self.quiet = quiet
         self.print_output = print_output
@@ -276,6 +284,9 @@ class DL85Predictor(BaseEstimator):
                                            tec_func_=user_slow_func,
                                            sec_func_=user_fast_func,
                                            te_func_=user_pred_func,
+                                           selc_func_=self.fast_error_lb_function,
+                                           split_func_=self.split_penalty_function,
+                                           depth_agnostic=self.depth_agnostic,
                                            max_depth=self.max_depth,
                                            min_sup=self.min_sup,
                                            example_weights=self.sample_weight,
@@ -286,6 +297,7 @@ class DL85Predictor(BaseEstimator):
                                            desc=self.desc,
                                            asc=self.asc,
                                            repeat_sort=self.repeat_sort,
+                                           k=self.k,
                                            predictor=predict,
                                            cachetype=dl85Optimizer.CacheType.CacheTrieItemset if self.cache_type == Cache_Type.Cache_TrieItemset else dl85Optimizer.CacheType.CacheHashItemset if self.cache_type == Cache_Type.Cache_HashItemset else dl85Optimizer.CacheType.CacheHashCover,
                                            cachesize=self.maxcachesize,

@@ -34,7 +34,7 @@ bool sortReuseDecOrder(TrieNode * &node1, TrieNode * &node2) {
     return node1->depth < node2->depth;
 }
 
-Cache_Trie::Cache_Trie(Depth maxdepth, WipeType wipe_type, int maxcachesize, float wipe_factor) : Cache(maxdepth, wipe_type, maxcachesize), wipe_factor( wipe_factor) {
+Cache_Trie::Cache_Trie(Depth maxdepth, WipeType wipe_type, int maxcachesize, float wipe_factor, bool depthAgnostic) : Cache(maxdepth, wipe_type, maxcachesize, depthAgnostic), wipe_factor( wipe_factor) {
     root = new TrieNode;
     if (maxcachesize > NO_CACHE_LIMIT) deletion_queue.reserve(maxcachesize - 1);
 }

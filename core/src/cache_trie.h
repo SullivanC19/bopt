@@ -24,7 +24,7 @@ struct TrieNode : Node {
 class Cache_Trie : public Cache {
 
 public:
-    Cache_Trie(Depth maxdepth, WipeType wipe_type=Subnodes, int maxcachesize=0, float wipe_factor=.5f);
+    Cache_Trie(Depth maxdepth, WipeType wipe_type=Subnodes, int maxcachesize=0, float wipe_factor=.5f, bool depthAgnostic=false);
 
     ~Cache_Trie(){ delete root; for (auto node: deletion_queue) { delete node; } };
 

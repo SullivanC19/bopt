@@ -36,6 +36,17 @@ cdef extern from "py_tid_error_function_wrapper.h":
         PyTidErrorWrapper(object) # define a constructor that takes a Python object
              # note - doesn't match c++ signature - that's fine!
 
+cdef extern from "py_support_error_lb_class_function_wrapper.h":
+    cdef cppclass PySupportErrorLowerBoundClassWrapper:
+        PySupportErrorLowerBoundClassWrapper()
+        PySupportErrorLowerBoundClassWrapper(object) # define a constructor that takes a Python object
+             # note - doesn't match c++ signature - that's fine!
+
+cdef extern from "py_split_penalty_function_wrapper.h":
+    cdef cppclass PySplitPenaltyWrapper:
+        PySplitPenaltyWrapper()
+        PySplitPenaltyWrapper(object) # define a constructor that takes a Python object
+             # note - doesn't match c++ signature - that's fine!
 
 cdef extern from "../core/src/dl85.h":
     string launch ( float* supports,
@@ -51,13 +62,19 @@ cdef extern from "../core/src/dl85.h":
                     PyTidErrorClassWrapper tids_error_class_callback,
                     PySupportErrorClassWrapper supports_error_class_callback,
                     PyTidErrorWrapper tids_error_callback,
+                    PySupportErrorLowerBoundClassWrapper supports_error_lb_class_callback,
+                    PySplitPenaltyWrapper split_penalty_callback,
                     float* in_weights,
                     bool tids_error_class_is_null,
                     bool supports_error_class_is_null,
                     bool tids_error_is_null,
+                    bool supports_error_lb_class_is_null,
+                    bool split_penalty_is_null,
+                    bool depthAgnostic,
                     bool infoGain,
                     bool infoAsc,
                     bool repeatSort,
+                    int k,
                     int timeLimit,
                     bool verbose_param,
                     CacheType cache_type,
@@ -78,6 +95,9 @@ def solve(data,
           tec_func_=None, # tec means that it takes "t"ransaction_ids as param and return "e"rror and "c"lass
           sec_func_=None, # sec means that it takes "s"upports as param and return "e"rror and "c"lass
           te_func_=None, # tec means that it takes "t"ransaction_ids as param and return "e"rror
+          selc_func_=None,
+          split_func_=None,
+          depth_agnostic=False,
           max_depth=1,
           min_sup=1,
           example_weights=[],
@@ -88,6 +108,7 @@ def solve(data,
           desc=False,
           asc=False,
           repeat_sort=False,
+          k=0,
           predictor=False,
           cachetype=CacheTrieItemset,
           cachesize=0,
@@ -114,6 +135,16 @@ def solve(data,
     te_null_flag = True
     if te_func_ is not None:
         te_null_flag = False
+
+    selc_null_flag = True
+    cdef PySupportErrorLowerBoundClassWrapper selc_func = PySupportErrorLowerBoundClassWrapper(selc_func_)
+    if selc_func_ is not None:
+        selc_null_flag = False
+
+    split_null_flag = True
+    cdef PySplitPenaltyWrapper split_func = PySplitPenaltyWrapper(split_func_)
+    if split_func_ is not None:
+        split_null_flag = False
 
     data = data.astype('int32')
     ntransactions, nattributes = data.shape
@@ -181,13 +212,19 @@ def solve(data,
                  tids_error_class_callback = tec_func,
                  supports_error_class_callback = sec_func,
                  tids_error_callback = te_func,
+                 supports_error_lb_class_callback = selc_func,
+                 split_penalty_callback = split_func,
                  in_weights = ex_weights_pointer,
                  tids_error_class_is_null = tec_null_flag,
                  supports_error_class_is_null = sec_null_flag,
                  tids_error_is_null = te_null_flag,
+                 supports_error_lb_class_is_null = selc_null_flag,
+                 split_penalty_is_null = split_null_flag,
+                 depthAgnostic = depth_agnostic,
                  infoGain = info_gain,
                  infoAsc = asc,
                  repeatSort = repeat_sort,
+                 k=k,
                  timeLimit = time_limit,
                  verbose_param = verb,
                  cache_type = cachetype,
