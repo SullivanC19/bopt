@@ -3,8 +3,7 @@ from sklearn.model_selection import train_test_split
 from pydl85 import DL85Classifier, Cache_Type
 import time
 
-from math import lgamma
-from tqdm import tqdm
+from math import lgamma, log
 
 from typing import List
 
@@ -23,7 +22,9 @@ def load_data(dataset, k=10, seed=42):
       data = np.genfromtxt(F_DATASET.format(dataset=dataset), delimiter=' ')
       X, y = data[:, 1:], data[:, 0]
       fold = np.random.RandomState(seed=seed).permutation(len(X)) % k
-      return [(X[fold == i], y[fold == i]) for i in range(k)]
+      n, d = X.shape
+      l = np.max(y) + 1
+      return [(X[fold == i], y[fold == i]) for i in range(k)], n, d, l
 
 def run_experiment(
             dataset: str,
@@ -34,19 +35,34 @@ def run_experiment(
             opt_depths: List[int],
             time_limit: int,
             k: int,
-            seed: int):
-      folds = load_data(dataset, k=k, seed=seed)
+            seed: int,
+            cache_size_threshold: float,
+            max_features: int):
+      folds, n, d, l = load_data(dataset, k=k, seed=seed)
+
+      cache_size_ub = min((n / k)  * log(2), d * log(3)) + log(n / k)
+      if cache_size_ub > cache_size_threshold:
+            raise ValueError("Cache size upper bound is too high, it is {}, but must be less than {}".format(cache_size_ub, cache_size_threshold))
+      
+      if d > max_features:
+            raise ValueError("Number of features is too high, it is {}, but must be less than {}".format(d, max_features))
+
+      if l > 2:
+            raise ValueError("Number of classes is too high, it is {}, but must be less than 2".format(l))
+
+      print(dataset)
+
       opt_trees = []
       sparse_opt_trees = []
       map_trees = []
-      for i in tqdm(range(k)):
+      for i in range(k):
             X_train, y_train = folds[i]
             
             # DEFINE ERROR FUNCTIONS
 
             fold_size = len(X_train)
             lowest_possible_depth = len(X_train) + 1
-            tiebreak_val = 0 if np.count_nonzero(y_train == 0) >= np.count_nonzero(y_train == 1) else 1
+            tiebreak_val = np.argmax(np.bincount(y_train.astype(np.int32)))
             all_depths = np.arange(lowest_possible_depth + 1)
             split_pen = np.log(alpha_s) - beta_s * np.log(1 + all_depths)
             stop_pen = np.log(1 - alpha_s * np.power(1 + all_depths, -beta_s))
@@ -112,16 +128,13 @@ def run_experiment(
             duration = time.perf_counter() - start
             map_trees.append((clf_map.tree_, clf_map.timeout_, duration))
 
-            print(clf_map.tree_)
-            print(clf_map.error_ - stop_pen[0])
-
       return opt_trees, sparse_opt_trees, map_trees
 
 
 if __name__ == "__main__":
       parser = ArgumentParser()
       parser.add_argument('dataset', type=str)
-      parser.add_argument('--alpha', type=float, default=2.0)
+      parser.add_argument('--alpha', type=float, default=5.0)
       parser.add_argument('--alpha_s', type=float, default=0.95)
       parser.add_argument('--beta_s', type=float, default=0.5)
       parser.add_argument('--lamb', type=float, default=0.005)
@@ -129,6 +142,8 @@ if __name__ == "__main__":
       parser.add_argument('--time_limit', type=int, default=1000)
       parser.add_argument('--k', type=int, default=10)
       parser.add_argument('--seed', type=int, default=42)
+      parser.add_argument('--cache_size_threshold', type=float, default=40.0)
+      parser.add_argument('--max_features', type=int, default=100)
       args = parser.parse_args()
 
       opt_trees, sparse_opt_trees, map_trees = run_experiment(
@@ -140,7 +155,9 @@ if __name__ == "__main__":
             args.opt_depths,
             args.time_limit,
             args.k,
-            args.seed)
+            args.seed,
+            args.cache_size_threshold,
+            args.max_features)
       
       for fold in range(args.k):
             dir_tree = DIR_TREES.format(
