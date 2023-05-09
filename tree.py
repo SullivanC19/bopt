@@ -18,6 +18,19 @@ class Tree:
     def __init__(self, root=None):
         self.root = TreeNode() if root is None else root
 
+    @classmethod
+    def from_dict(cls, tree_dict: dict):
+        return Tree(TreeNode.from_dict(tree_dict))
+
+    def predict(self, X):
+        pred = np.zeros(len(X), dtype=int)
+        for i, x in enumerate(X):
+            pred[i] = self.root.predict(x)
+        return pred
+
+    def accuracy(self, X, y):
+        return np.mean(self.predict(X) == y)
+
     def log_likelihood(self, X, y):
         # get from previous project
         # add log prior
@@ -29,6 +42,7 @@ class TreeNode:
         self.left = left
         self.right = right
         self.value = value
+        self.feature = feature
 
     @classmethod
     def from_dict(cls, tree_dict: dict):
@@ -36,10 +50,18 @@ class TreeNode:
         if 'value' in tree_dict: # leaf node
             node.value = tree_dict['value']
         else: # internal node
-            node.feature = tree_dict['feature']
+            node.feature = tree_dict['feat']
             node.left = TreeNode.from_dict(tree_dict['left'])
             node.right = TreeNode.from_dict(tree_dict['right'])
         return node
 
     def is_leaf(self):
         return self.left is None and self.right is None
+    
+    def predict(self, x):
+        if self.is_leaf():
+            return self.value
+        if x[self.feature] == 1:
+            return self.left.predict(x)
+        else:
+            return self.right.predict(x)

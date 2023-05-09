@@ -19,9 +19,6 @@ F_OPT_TREE = "opt_tree_dept=_{depth}.pkl"
 F_SPARSE_OPT_TREE = "sparse_opt_tree_lambda={lamb}.pkl"
 F_MAP_TREE = "map_tree_alpha={alpha}_alphas={alpha_s}_betas={beta_s}.pkl"
 
-def split_penalty_map(depth: int):
-      return -(-stop_pen[depth] + split_pen[depth] + 2 * stop_pen[depth + 1])
-
 def load_data(dataset, k=10, seed=42):
       data = np.genfromtxt(F_DATASET.format(dataset=dataset), delimiter=' ')
       X, y = data[:, 1:], data[:, 0]
@@ -50,7 +47,7 @@ def run_experiment(
             fold_size = len(X_train)
             lowest_possible_depth = len(X_train) + 1
             tiebreak_val = 0 if np.count_nonzero(y_train == 0) >= np.count_nonzero(y_train == 1) else 1
-            all_depths = np.arange(1, lowest_possible_depth + 1)
+            all_depths = np.arange(lowest_possible_depth + 1)
             split_pen = np.log(alpha_s) - beta_s * np.log(1 + all_depths)
             stop_pen = np.log(1 - alpha_s * np.power(1 + all_depths, -beta_s))
             node_penalty = lamb * fold_size
@@ -115,13 +112,16 @@ def run_experiment(
             duration = time.perf_counter() - start
             map_trees.append((clf_map.tree_, clf_map.timeout_, duration))
 
+            print(clf_map.tree_)
+            print(clf_map.error_ - stop_pen[0])
+
       return opt_trees, sparse_opt_trees, map_trees
 
 
 if __name__ == "__main__":
       parser = ArgumentParser()
       parser.add_argument('dataset', type=str)
-      parser.add_argument('--alpha', type=float, default=5.0)
+      parser.add_argument('--alpha', type=float, default=2.0)
       parser.add_argument('--alpha_s', type=float, default=0.95)
       parser.add_argument('--beta_s', type=float, default=0.5)
       parser.add_argument('--lamb', type=float, default=0.005)
