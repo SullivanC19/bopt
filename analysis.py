@@ -16,9 +16,12 @@ if __name__ == '__main__':
 
     print(args.dataset)
 
+    # TODO: mod to fit new sample-based experiment
+    # TODO: add likelihood and stability metrics
+
     K = 10
     DEPTHS = [2, 3, 4, 5]
-    ALPHA = 5.0
+    ALPHA = 1.0
     ALPHA_S = 0.95
     BETA_S = 0.5
     LAMB = 0.005
