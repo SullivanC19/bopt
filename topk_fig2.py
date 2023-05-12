@@ -103,6 +103,8 @@ def run_topk_experiment(dataset, data, k, maxdepth, seed):
 
 if __name__ == '__main__':
 
+    print(len(CATEGORICAL_DATASETS) + len(NUMERICAL_DATASETS) + len(TEST_TRAIN_DATASETS))
+
     parser = ArgumentParser()
     parser.add_argument("idx", type=int)
     # parser.add_argument("--k", type=int, default=1)
