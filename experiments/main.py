@@ -12,7 +12,7 @@ from argparse import ArgumentParser
 import os
 
 F_DATASET = "datasets/{dataset}.txt"
-DIR_TREES = "trees/{dataset}/samplesize={sample_size}_sample={idx}_seed={seed}/"
+DIR_TREES = "results/trees/{dataset}/samplesize={sample_size}_sample={idx}_seed={seed}/"
 F_OPT_TREE = "opt_tree_dept=_{depth}.pkl"
 F_SPARSE_OPT_TREE = "sparse_opt_tree_lambda={lamb}.pkl"
 F_MAP_TREE = "map_tree_alpha={alpha}_alphas={alpha_s}_betas={beta_s}.pkl"
