@@ -1,15 +1,26 @@
 import numpy as np
 from math import lgamma, log
 
+from argparse import ArgumentParser
+
 from pydl85 import DL85Classifier, Cache_Type
 from tree import Tree
+
+DATASETS = [
+    'primary-tumor',
+    'australian-un-reduced_converted'
+]
 
 ALPHA = 5.0
 ALPHA_S = 0.95
 BETA_S = 0.5
 
 if __name__ == '__main__':
-    data = np.genfromtxt('datasets/primary-tumor.txt')
+    parser = ArgumentParser()
+    parser.add_argument('dataset', type=str)
+    args = parser.parse_args()
+    
+    data = np.genfromtxt(f'datasets/{args.dataset}.txt')
     X, y = data[:, 1:], data[:, 0]
 
     lowest_possible_depth = len(X)
@@ -18,11 +29,7 @@ if __name__ == '__main__':
     # split_pen = np.log(ALPHA_S) - BETA_S * np.log(1 + all_depths)
     split_pen = np.log(ALPHA_S) - BETA_S * np.log(1 + all_depths)
     stop_pen = np.log(1 - ALPHA_S * np.power(1 + all_depths, -BETA_S))
-
     alpha_prior_term = lgamma(ALPHA) - 2 * lgamma(ALPHA / 2)
-
-    print(split_pen[:4])
-    print(stop_pen[:4])
 
     def split_penalty_map(depth, splits):
         return 0 if splits == 0 else -(-stop_pen[depth] + split_pen[depth] + 2 * stop_pen[depth + 1] - log(splits))

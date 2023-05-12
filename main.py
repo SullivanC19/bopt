@@ -86,9 +86,7 @@ def run_experiment(
                   split_pen = np.log(alpha_s) - beta_s * np.log(1 + all_depths)
                   stop_pen = np.log(1 - alpha_s * np.power(1 + all_depths, -beta_s))
                   node_penalty = lamb * len(X_train)
-
-                  def split_penalty_map(depth):
-                        return -(-stop_pen[depth] + split_pen[depth] + 2 * stop_pen[depth + 1])
+                  alpha_prior_term = lgamma(alpha) - 2 * lgamma(alpha / 2)
                   
                   def error_opt(label_counts):
                         c0, c1 = label_counts
@@ -102,11 +100,14 @@ def run_experiment(
                               tiebreak_val if c0 == c1 else (0 if c0 > c1 else 1), \
                               node_penalty
 
+                  def split_penalty_map(depth, splits):
+                        return 0 if splits == 0 else -(-stop_pen[depth] + split_pen[depth] + 2 * stop_pen[depth + 1] - log(splits))
+
                   def error_map(label_counts):
                         c0, c1 = label_counts
-                        return -((lgamma(c0 + alpha / 2) + lgamma(c1 + alpha / 2)) - lgamma(c0 + c1 + alpha)), \
-                                    tiebreak_val if c0 == c1 else (0 if c0 > c1 else 1), \
-                                    -(lgamma(c0 + alpha / 2) + lgamma(alpha / 2) - lgamma(c0 + alpha) + (lgamma(c1 + alpha / 2) + lgamma(alpha / 2) - lgamma(c1 + alpha)))
+                        leaf_error = -(lgamma(c0 + alpha / 2) + lgamma(c1 + alpha / 2) - lgamma(c0 + c1 + alpha) + alpha_prior_term)
+                        perfect_split_error = -((lgamma(c0 + alpha / 2) + lgamma(alpha / 2) - lgamma(c0 + alpha)) + (lgamma(c1 + alpha / 2) + lgamma(alpha / 2) - lgamma(c1 + alpha)) + 2 * alpha_prior_term)
+                        return leaf_error, tiebreak_val if c0 == c1 else (0 if c0 > c1 else 1), min(leaf_error, perfect_split_error)
 
                   opt_trees[i].append([])
                   for opt_max_depth in opt_depths:
@@ -126,6 +127,7 @@ def run_experiment(
                         cache_type=Cache_Type.Cache_HashCover,
                         depth_two_special_algo=False,
                         similar_lb=False,
+                        similar_for_branching=False,
                         fast_error_lb_function=error_sparse_opt,
                         max_depth=lowest_possible_depth)
                   start = time.perf_counter()
