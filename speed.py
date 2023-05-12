@@ -11,16 +11,14 @@ DATASETS = [
     'australian-un-reduced_converted'
 ]
 
+F_OUT = 'map_speed.out'
+
 ALPHA = 5.0
 ALPHA_S = 0.95
 BETA_S = 0.5
 
-if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('dataset', type=str)
-    args = parser.parse_args()
-    
-    data = np.genfromtxt(f'datasets/{args.dataset}.txt')
+def run(dataset, max_depth):
+    data = np.genfromtxt(f'datasets/{dataset}.txt')
     X, y = data[:, 1:], data[:, 0]
 
     lowest_possible_depth = len(X)
@@ -47,15 +45,17 @@ if __name__ == '__main__':
         similar_for_branching=False,
         split_penalty_function=split_penalty_map,
         fast_error_lb_function=error_map,
-        max_depth=lowest_possible_depth,
+        max_depth=max_depth if max_depth != -1 else lowest_possible_depth,
         desc=True,
         repeat_sort=True)
-    
     clf.fit(X, y)
 
-    print("Time: ", clf.runtime_)
-    print(clf.tree_)
-    print(-(clf.error_ - stop_pen[0]))
-    tree = Tree.from_dict(clf.tree_)
-    print(tree)
-    print(tree.log_likelihood(X, y, alpha=ALPHA))
+    return -(clf.error_ - stop_pen[0]), clf.runtime_
+
+
+if __name__ == '__main__':
+    with open(F_OUT, 'a') as f:
+        for dataset in DATASETS:
+            for depth in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1]:
+                error, runtime = run(dataset, depth)
+                f.write(f'{dataset} {depth} {error} {runtime}\n')

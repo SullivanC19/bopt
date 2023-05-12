@@ -10,6 +10,8 @@ from argparse import ArgumentParser
 
 from typing import Set, FrozenSet, List
 
+from prettytable import PrettyTable
+
 datasets = [
 'australian-un-reduced_converted',
 'bank_conv_categorical_bin',
@@ -65,20 +67,15 @@ def region_compatibility(F_1: List[FrozenSet[int]], F_2: List[FrozenSet[int]], D
 
 def results(dataset: str):
     data, n, d, l = load_data(dataset, SAMPLE_SIZES, NUM_SAMPLES_TAKEN, SEED)
-
     print(dataset)
 
     values = np.zeros((len(SAMPLE_SIZES), 7, 4))
-
     for i, sample_size in enumerate(SAMPLE_SIZES):
-
         print(f"Sample Size: {sample_size}")
-
         opt_trees = []
         sparse_opt_trees = []
         map_trees = []
         cart_trees = []
-
         for j in range(NUM_SAMPLES_TAKEN):
             dir_tree = DIR_TREES.format(
                 dataset=dataset,
@@ -232,7 +229,26 @@ def results(dataset: str):
 
 
 if __name__ == '__main__':
-    values = np.zeros((len(SAMPLE_SIZES), 7, 4))
+    
+    # values = np.zeros((len(SAMPLE_SIZES), 7, 4))
+    # if not os.path.exists("results"):
+    #     os.makedirs("results")
+    
+    # for dataset in datasets:
+    #     values = results(dataset)
+    #     np.save(f"results/{dataset}.npy", values)
+
+    wins = np.zeros((len(SAMPLE_SIZES), 6, 4))
+    diff = np.zeros((len(SAMPLE_SIZES), 6, 4))
     for dataset in datasets:
-        values = results(dataset)
-        np.save("results/{dataset}.npy", values)
+        values = np.load(f"results/{dataset}.npy")
+        wins += values[:, 0, :].reshape(len(SAMPLE_SIZES), 1, 4) > values[:, 1:, :]
+        diff += values[:, 0, :].reshape(len(SAMPLE_SIZES), 1, 4) - values[:, 1:, :]
+
+    print("Win %")
+    for i, sample_size in enumerate(SAMPLE_SIZES):
+        print(f"Sample size: {sample_size}")
+        table = PrettyTable(field_names=["Metric", "MAP vs. SparseOpt", "MAP vs. CART", "MAP vs. Opt_2", "MAP vs. Opt_3", "MAP vs. Opt_4", "MAP vs. Opt_5"])
+        for j, metric in enumerate(["Accuracy", "Log Likelihood", "Stability", "Similarity"]):
+            table.add_row([metric] + [f"{prc}%" for prc in np.round(wins[i, :, j] / len(datasets) * 100, 2)])
+        print(table)
