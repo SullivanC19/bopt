@@ -458,10 +458,10 @@ pair<Node*,HasInter> Search_cover_cache::recurse(Itemset &itemset,
             bool hasUpdated = nodeDataManager->updateData(node, child_ub, attr, child_nodes[NEG_ITEM], child_nodes[POS_ITEM], splitPenalty);
             if (hasUpdated) {
                 child_ub = feature_error;
-                if (depth == 0) {
-                    float curTime = duration<float>(high_resolution_clock::now() - GlobalParams::getInstance()->startTime).count();
-                    cout << "Best tree is " << node->data->error << " at time " << curTime << endl;
-                }
+                // if (depth == 0) {
+                //     float curTime = duration<float>(high_resolution_clock::now() - GlobalParams::getInstance()->startTime).count();
+                //     cout << "Best tree is " << node->data->error << " at time " << curTime << endl;
+                // }
                 Logger::showMessageAndReturn("-after this attribute ", attr, ", node error=", *nodeError, " and ub=", child_ub);
             }
             else { // in case we get the real error, we update the minimum possible error

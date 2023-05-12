@@ -154,12 +154,11 @@ def run_experiment(
 if __name__ == "__main__":
       parser = ArgumentParser()
       parser.add_argument('dataset', type=str)
-      parser.add_argument('--alpha', type=float, default=1.0)
+      parser.add_argument('--alpha', type=float, default=5.0)
       parser.add_argument('--alpha_s', type=float, default=0.95)
       parser.add_argument('--beta_s', type=float, default=0.5)
       parser.add_argument('--lamb', type=float, default=0.005)
       parser.add_argument('--opt_depths', type=int, nargs='+', default=[2, 3, 4, 5])
-      parser.add_argument('--k', type=int, default=10)
       parser.add_argument('--seed', type=int, default=42)
       parser.add_argument('--sample_sizes', type=int, nargs='+', default=[10, 20, 40, 80, 160])
       parser.add_argument('--num_samples_taken', type=int, default=10)
@@ -179,24 +178,6 @@ if __name__ == "__main__":
             args.seed,
             args.min_samples,
             args.max_features)
-      
-      # for fold in range(args.k):
-      #       dir_tree = DIR_TREES.format(
-      #             dataset=args.dataset,
-      #             k=args.k,
-      #             time_limit=args.time_limit,
-      #             seed=args.seed,
-      #             fold=fold)
-      #       os.makedirs(dir_tree, exist_ok=True)
-      #       for i, opt_max_depth in enumerate(args.opt_depths):
-      #             opt_tree_path = os.path.join(dir_tree, F_OPT_TREE.format(depth=opt_max_depth))
-      #             pickle.dump(opt_trees[fold][i], open(opt_tree_path, 'wb'))
-
-      #       sparse_opt_tree_path = os.path.join(dir_tree, F_SPARSE_OPT_TREE.format(lamb=args.lamb))
-      #       pickle.dump(sparse_opt_trees[fold], open(sparse_opt_tree_path, 'wb'))
-
-      #       map_tree_path = os.path.join(dir_tree, F_MAP_TREE.format(alpha=args.alpha, alpha_s=args.alpha_s, beta_s=args.beta_s))
-      #       pickle.dump(map_trees[fold], open(map_tree_path, 'wb'))
 
       for i, sample_size in enumerate(args.sample_sizes):
             for j in range(args.num_samples_taken):
