@@ -66,8 +66,8 @@ TEST_TRAIN_DATASETS = [
     
 SEEDS = list(range(42, 52))
 
-k_values = [1,2,3,4,8,12,16,0]
-max_depths = [3,4,5,6,7,8]
+KS = [1,2,3,4,8,12,16,0]
+MAXDEPTHS = [3,4,5,6,7,8]
 
 TRAIN_ACC_PATH = "topk/results/accuracy/dataset={dataset}_seed={seed}-train.npy"
 TEST_ACC_PATH = "topk/results/accuracy/dataset={dataset}_seed={seed}-test.npy"
@@ -102,52 +102,44 @@ def run_topk_experiment(dataset, data, k, maxdepth, seed):
     pickle.dump((clf.tree_, train_acc, test_acc), open(TREE_AND_RESULTS_PATH.format(dataset=dataset, k=k, maxdepth=maxdepth, seed=seed), "wb"))
 
 if __name__ == '__main__':
-
-    print(len(CATEGORICAL_DATASETS) + len(NUMERICAL_DATASETS) + len(TEST_TRAIN_DATASETS))
-
     parser = ArgumentParser()
-    parser.add_argument("idx", type=int)
-    # parser.add_argument("--k", type=int, default=1)
-    # parser.add_argument("--maxdepth", type=int, default=3)
-    # parser.add_argument("--seed", type=int, default=4)
+    parser.add_argument("data_idx", type=int)
+    parser.add_argument("seed_idx", type=int)
     args = parser.parse_args()
 
-    idx = args.idx
-
-    seed = SEEDS[idx % len(SEEDS)]
-    idx //= len(SEEDS)
-
-    maxdepth = max_depths[idx % len(max_depths)]
-    idx //= len(max_depths)
-
-    k = k_values[idx % len(k_values)]
-    idx //= len(k_values)
+    data_idx = args.data_idx
+    seed_idx = args.seed_idx
+    
+    seed = SEEDS[seed_idx]
 
     data = None
     dataset = None
-    if idx < len(CATEGORICAL_DATASETS):
-        dataset = CATEGORICAL_DATASETS[idx]
+    if data_idx < len(CATEGORICAL_DATASETS):
+        dataset = CATEGORICAL_DATASETS[data_idx]
         data = load_data(CATEGORICAL_DATA_PATH, dataset, seed=seed)
+    elif data_idx < len(CATEGORICAL_DATASETS) + len(NUMERICAL_DATASETS):
+        dataset = NUMERICAL_DATASETS[data_idx]
+        data = load_data_numerical(NUMERICAL_DATA_PATH, dataset, seed=seed)
+    elif data_idx < len(CATEGORICAL_DATASETS) + len(NUMERICAL_DATASETS) + len(TEST_TRAIN_DATASETS):
+        dataset = TEST_TRAIN_DATASETS[data_idx]
+        data = load_data_numerical_tt_split(TEST_TRAIN_DATA_PATH, dataset, max_splits=100)
+        if seed != SEEDS[0]:
+            exit() # train/test split won't change with seed
     else:
-        idx -= len(CATEGORICAL_DATASETS)
-    
-        if idx < len(NUMERICAL_DATASETS):
-            dataset = NUMERICAL_DATASETS[idx]
-            data = load_data_numerical(NUMERICAL_DATA_PATH, dataset, seed=seed)
-        else:
-            idx -= len(NUMERICAL_DATASETS)
+        raise ValueError("Invalid idx")
 
-            if idx < len(TEST_TRAIN_DATASETS):
-                dataset = TEST_TRAIN_DATASETS[idx]
-                data = load_data_numerical_tt_split(TEST_TRAIN_DATA_PATH, dataset, max_splits=100)
-                if seed != SEEDS[0]:
-                    exit() # train/test split won't change with seed
-            else:
-                raise ValueError("Invalid idx")
-            
-    print("Dataset: {}".format(dataset))
-    print("Seed: {}".format(seed))
-    print("Max depth: {}".format(maxdepth))
-    print("k: {}".format(k))
-
-    run_topk_experiment(dataset, data, k, maxdepth, seed)
+    trees = []
+    train_accs = []
+    test_accs = []
+    for k in KS:
+        print(f"k={k}")
+        trees.append([])
+        train_accs.append([])
+        test_accs.append([])
+        for maxdepth in MAXDEPTHS:
+            print(f"maxdepth={maxdepth}")
+            p = Process(target=run_topk_experiment, args=(dataset, data, k, maxdepth, seed))
+            p.start()
+            p.join()
+            if p.exitcode:
+                break
