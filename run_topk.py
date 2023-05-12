@@ -1,9 +1,4 @@
-from multiprocessing import Process
-import pickle
-
 import numpy as np
-import pandas as pd
-
 from argparse import ArgumentParser
 
 from pydl85 import DL85Classifier, Cache_Type
@@ -88,11 +83,12 @@ def run_topk(data, k, maxdepth):
     return tree, train_acc, test_acc, time_taken
 
 if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('dataset', type=str)
-    parser.add_argument('maxdepth', type=int)
-    parser.add_argument('--k', type=int, default=0) # 0 means k = n
-    parser.add_argument('--seed', type=int, default=42)
+    parser = ArgumentParser(description='Run topk experiments')
+    parser.add_argument('-d', '--dataset', type=str, help='Dataset name')
+    parser.add_argument('-m', '--maxdepth', type=int, help='Max depth of tree')
+    parser.add_argument('-k', '--k', type=int, default=0, help='Considers only the top k feature splits sorted by information gain (in case of tie, goes with lowest index feature). If k=0, considers all features.')
+    parser.add_argument('-s', '--seed', type=int, default=42, help='Random seed for train/test split, ignored for datasets with train/test split')
+    parser.add_argument('-to', '--time-only', action='store_true', help='Only print time taken')
     
     args = parser.parse_args()
 
@@ -108,6 +104,10 @@ if __name__ == '__main__':
 
     tree, train_acc, test_acc, time_taken = run_topk(data, args.k, args.maxdepth)
     
+    if args.time_only:
+        print(time_taken)
+        exit(0)
+
     print(f"Train acc: {train_acc}")
     print(f"Test acc: {test_acc}")
     print(f"Time taken: {time_taken}")
