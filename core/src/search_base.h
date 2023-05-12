@@ -32,7 +32,7 @@ public:
     NodeDataManager *nodeDataManager;
     bool from_cpp = true;
     int k = 0;
-    function<float(int)> *split_penalty_callback_pointer = nullptr;
+    function<float(int, int)> *split_penalty_callback_pointer = nullptr;
 
     Search_base(NodeDataManager *nodeDataManager,
                 bool infoGain,
@@ -47,7 +47,7 @@ public:
                 bool stopAfterError = false,
                 bool from_cpp = true,
                 int k = 0,
-                function<float(int)> *split_penalty_callback_pointer = nullptr);
+                function<float(int, int)> *split_penalty_callback_pointer = nullptr);
 
     virtual ~Search_base(){}
 

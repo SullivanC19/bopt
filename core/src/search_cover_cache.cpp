@@ -16,7 +16,7 @@ Search_cover_cache::Search_cover_cache(NodeDataManager *nodeDataManager, bool in
                                        bool similar_for_branching,
                                        bool from_cpp,
                                        int k,
-                                       function<float(int)> *split_penalty_callback_pointer) :
+                                       function<float(int, int)> *split_penalty_callback_pointer) :
         Search_base(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit, cache, maxError, specialAlgo, stopAfterError, from_cpp, k, split_penalty_callback_pointer), similarlb(similarlb), dynamic_branching(dynamic_branching), similar_for_branching(similar_for_branching) {}
 
 Search_cover_cache::~Search_cover_cache() {}
@@ -125,7 +125,7 @@ float Search_cover_cache::informationGain(ErrorVals notTaken, ErrorVals taken) {
 
 Attributes Search_cover_cache::getSuccessors(Attributes &last_candidates, Attribute last_added) {
 
-    std::multimap<float, Attribute> gain;
+    std::multimap<pair<float, int>, Attribute> gain;
     Attributes next_candidates;
     next_candidates.reserve(last_candidates.size() - 1);
 
@@ -152,7 +152,7 @@ Attributes Search_cover_cache::getSuccessors(Attributes &last_candidates, Attrib
                 ErrorVals sup_class_left = nodeDataManager->cover->temporaryIntersect(candidate, false).first;
                 ErrorVals sup_class_right = newErrorVals();
                 subErrorVals(current_sup_class, sup_class_left, sup_class_right);
-                gain.insert(std::pair<float, Attribute>(informationGain(sup_class_left, sup_class_right), candidate));
+                gain.insert(std::pair<pair<float, int>, Attribute>({informationGain(sup_class_left, sup_class_right), infoAsc ? candidate : -candidate}, candidate));
                 deleteErrorVals(sup_class_left);
                 deleteErrorVals(sup_class_right);
             } else next_candidates.push_back(candidate);
@@ -347,16 +347,16 @@ pair<Node*,HasInter> Search_cover_cache::recurse(Itemset &itemset,
         *nodeError = leafError;
     }
 
-    // (sullivanc19) compute penalty for splitting at this depth
-    float splitPenalty = 0.0;
-    if (split_penalty_callback_pointer != nullptr) {
-        splitPenalty = (*split_penalty_callback_pointer)(depth);
-    }
-
     if (timeLimitReached) { *nodeError = leafError; return {node, true}; }
 
     // if we can't get solution without computation, we compute the next candidates to perform the search
     Attributes next_attributes = getSuccessors(next_candidates, last_added_attr);
+
+    // (sullivanc19) compute penalty for splitting at this depth
+    float splitPenalty = 0.0;
+    if (split_penalty_callback_pointer != nullptr) {
+        splitPenalty = (*split_penalty_callback_pointer)(depth, next_attributes.size());
+    }
 
     // case in which there is no candidate
     if (next_attributes.empty()) {
@@ -458,6 +458,10 @@ pair<Node*,HasInter> Search_cover_cache::recurse(Itemset &itemset,
             bool hasUpdated = nodeDataManager->updateData(node, child_ub, attr, child_nodes[NEG_ITEM], child_nodes[POS_ITEM], splitPenalty);
             if (hasUpdated) {
                 child_ub = feature_error;
+                if (depth == 0) {
+                    float curTime = duration<float>(high_resolution_clock::now() - GlobalParams::getInstance()->startTime).count();
+                    cout << "Best tree is " << node->data->error << " at time " << curTime << endl;
+                }
                 Logger::showMessageAndReturn("-after this attribute ", attr, ", node error=", *nodeError, " and ub=", child_ub);
             }
             else { // in case we get the real error, we update the minimum possible error

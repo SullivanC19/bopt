@@ -41,11 +41,11 @@ public:
         return *this;
     }
 
-    float operator()(int depth) {
+    float operator()(int depth, int splits) {
         PyInit_error_function();
         float result = std::numeric_limits<float>::max();
         if (pyFunction != nullptr) { // nullptr check
-            result = call_python_split_penalty_function(pyFunction, depth); // note, no way of checking for errors until you return to Python
+            result = call_python_split_penalty_function(pyFunction, depth, splits); // note, no way of checking for errors until you return to Python
         }
         return result;
     }

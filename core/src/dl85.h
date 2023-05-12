@@ -72,7 +72,7 @@ string launch(
         // wrapping done in cython, this pointer in python is seen as a list of tids in the cover
         function<float(RCover *)> tids_error_callback = nullptr,
         function<vector<float>(RCover *)> supports_error_lb_class_callback = nullptr,
-        function<float(int)> split_penalty_callback = nullptr,
+        function<float(int, int)> split_penalty_callback = nullptr,
         float *in_weights = nullptr,
         bool tids_error_class_is_null = true,
         bool supports_error_class_is_null = true,

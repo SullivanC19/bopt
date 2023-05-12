@@ -20,7 +20,7 @@ string launch(ErrorVals supports,
               function<vector<float>(RCover *)> supports_error_class_callback,
               function<float(RCover *)> tids_error_callback,
               function<vector<float>(RCover *)> supports_error_lb_class_callback,
-              function<float(int)> split_penalty_callback,
+              function<float(int, int)> split_penalty_callback,
               float *in_weights,
               bool tids_error_class_is_null,
               bool supports_error_class_is_null,
@@ -60,7 +60,7 @@ string launch(ErrorVals supports,
     if (supports_error_lb_class_is_null) supports_error_lb_class_callback_pointer = nullptr;
     
 
-    function<float(int)> *split_penalty_callback_pointer = &split_penalty_callback;
+    function<float(int, int)> *split_penalty_callback_pointer = &split_penalty_callback;
     if (split_penalty_is_null) split_penalty_callback_pointer = nullptr;
 
     GlobalParams::getInstance()->verbose = verbose_param;

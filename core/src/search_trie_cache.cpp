@@ -15,7 +15,7 @@ Search_trie_cache::Search_trie_cache(NodeDataManager *nodeDataManager, bool info
                                      bool similar_for_branching,
                                      bool from_cpp,
                                      int k,
-                                     function<float(int)> *split_penalty_callback_pointer) :
+                                     function<float(int, int)> *split_penalty_callback_pointer) :
         Search_base(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit, cache, maxError, specialAlgo, stopAfterError, from_cpp, k, split_penalty_callback_pointer), similarlb(similarlb), dynamic_branching(dynamic_branching), similar_for_branching(similar_for_branching) {}
 
 Search_trie_cache::~Search_trie_cache(){};
@@ -116,7 +116,7 @@ float Search_trie_cache::informationGain(ErrorVals notTaken, ErrorVals taken) {
 
 Attributes Search_trie_cache::getSuccessors(Attributes &last_candidates, Attribute last_added, const Itemset &itemset, Node* node) {
 
-    std::multimap<float, Attribute> gain;
+    std::multimap<pair<float, int>, Attribute> gain;
     Attributes next_candidates;
 
     // the current node does not fulfill the frequency criterion. In correct situation, this case won't happen
@@ -146,7 +146,7 @@ Attributes Search_trie_cache::getSuccessors(Attributes &last_candidates, Attribu
                 ErrorVals sup_class_left = nodeDataManager->cover->temporaryIntersect(candidate, false).first;
                 ErrorVals sup_class_right = newErrorVals();
                 subErrorVals(current_sup_class, sup_class_left, sup_class_right);
-                gain.insert(std::pair<float, Attribute>(informationGain(sup_class_left, sup_class_right), candidate));
+                gain.insert(std::pair<pair<float, int>, Attribute>({informationGain(sup_class_left, sup_class_right), infoAsc ? candidate : -candidate}, candidate));
                 deleteErrorVals(sup_class_left);
                 deleteErrorVals(sup_class_right);
             } else next_candidates.push_back(candidate);
@@ -354,12 +354,6 @@ pair<Node*,HasInter> Search_trie_cache::recurse(const Itemset &itemset,
         *nodeError = leafError;
     }
 
-    // (sullivanc19) compute penalty for splitting at this depth
-    float splitPenalty = 0.0;
-    if (split_penalty_callback_pointer != nullptr) {
-        splitPenalty = (*split_penalty_callback_pointer)(depth);
-    }
-
     // if we can't get solution without computation, we compute the next candidates to perform the search
     Attributes next_attributes = getSuccessors(next_candidates, last_added_attr, itemset, node);
 
@@ -368,6 +362,12 @@ pair<Node*,HasInter> Search_trie_cache::recurse(const Itemset &itemset,
         *nodeError = leafError;
         Logger::showMessageAndReturn("No candidates. nodeError is set to leafError\n", "depth = ", depth, " and init ub = ", ub, " and error after search = ", *nodeError, "\nwe backtrack");
         return {node, true};
+    }
+
+    // (sullivanc19) compute penalty for splitting at this depth
+    float splitPenalty = 0.0;
+    if (split_penalty_callback_pointer != nullptr) {
+        splitPenalty = (*split_penalty_callback_pointer)(depth, next_attributes.size());
     }
 
     SimilarVals similar_db1, similar_db2; // parameters for similarity lower bound

@@ -45,7 +45,7 @@ public:
                         bool similar_for_branching = true,
                         bool from_cpp = true,
                         int k = 0,
-                        function<float(int)> *split_penalty_callback_pointer = nullptr);
+                        function<float(int, int)> *split_penalty_callback_pointer = nullptr);
 
     ~Search_cover_cache();
 

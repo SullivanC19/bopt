@@ -114,6 +114,7 @@ def run_experiment(
                               cache_type=Cache_Type.Cache_HashCover,
                               depth_two_special_algo=False,
                               similar_lb=False,
+                              similar_for_branching=False,
                               fast_error_lb_function=error_opt,
                               max_depth=opt_max_depth)
                         start = time.perf_counter()
@@ -136,6 +137,7 @@ def run_experiment(
                         cache_type=Cache_Type.Cache_HashCover,
                         depth_two_special_algo=False,
                         similar_lb=False,
+                        similar_for_branching=False,
                         split_penalty_function=split_penalty_map,
                         fast_error_lb_function=error_map,
                         max_depth=lowest_possible_depth)

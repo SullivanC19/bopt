@@ -18,7 +18,7 @@ Search_nocache::Search_nocache(NodeDataManager *nodeDataManager, bool infoGain, 
                                bool use_ub,
                                bool from_cpp,
                                int k,
-                               function<float(int)> *split_penalty_callback_pointer) :
+                               function<float(int, int)> *split_penalty_callback_pointer) :
         Search_base(nodeDataManager, infoGain, infoAsc, repeatSort, minsup, maxdepth, timeLimit, cache, maxError, specialAlgo, stopAfterError, from_cpp, k, split_penalty_callback_pointer), use_ub(use_ub) {}
 
 Search_nocache::~Search_nocache() {}
@@ -56,7 +56,7 @@ float Search_nocache::informationGain(ErrorVals notTaken, ErrorVals taken) {
 
 Attributes Search_nocache::getSuccessors(Attributes &last_candidates, Attribute last_added) {
 
-    std::multimap<float, Attribute> gain;
+    std::multimap<pair<float, int>, Attribute> gain;
     Attributes next_candidates;
     next_candidates.reserve(last_candidates.size() - 1);
 
@@ -84,7 +84,7 @@ Attributes Search_nocache::getSuccessors(Attributes &last_candidates, Attribute 
                 ErrorVals sup_class_left = nodeDataManager->cover->temporaryIntersect(candidate, false).first;
                 ErrorVals sup_class_right = newErrorVals();
                 subErrorVals(current_sup_class, sup_class_left, sup_class_right);
-                gain.insert(std::pair<float, Attribute>(informationGain(sup_class_left, sup_class_right), candidate));
+                gain.insert(std::pair<pair<float, int>, Attribute>({informationGain(sup_class_left, sup_class_right), infoAsc ? candidate : -candidate}, candidate));
                 deleteErrorVals(sup_class_left);
                 deleteErrorVals(sup_class_right);
             }
@@ -129,12 +129,6 @@ Error Search_nocache::recurse(Attribute last_added,
 
     auto leaf = nodeDataManager->computeLeafInfo();
 
-    // (sullivanc19) compute penalty for splitting at this depth
-    float splitPenalty = 0.0;
-    if (split_penalty_callback_pointer != nullptr) {
-        splitPenalty = (*split_penalty_callback_pointer)(depth);
-    }
-
     // the solution can be inferred without computation
     if (depth == maxdepth || nodeDataManager->cover->getSupport() < 2 * minsup || leaf.error == 0 || timeLimitReached) {
         Logger::showMessageAndReturn("we backtrack with leaf error = ", leaf.error, " new ub = ", ub);
@@ -157,6 +151,12 @@ Error Search_nocache::recurse(Attribute last_added,
     // if we can't get solution without computation, we compute the next candidates to perform the search
     Attributes next_attributes = getSuccessors(next_candidates, last_added);
     // next_attributes = getSuccessors(next_candidates, cover, last_added);
+
+    // (sullivanc19) compute penalty for splitting at this depth
+    float splitPenalty = 0.0;
+    if (split_penalty_callback_pointer != nullptr) {
+        splitPenalty = (*split_penalty_callback_pointer)(depth, next_attributes.size());
+    }
 
     // case in which there is no candidate
     if (next_attributes.empty()) {

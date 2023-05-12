@@ -18,7 +18,7 @@ Search_base::Search_base(
         bool stopAfterError,
         bool from_cpp,
         int k,
-        function<float(int)> *split_penalty_callback_pointer
+        function<float(int, int)> *split_penalty_callback_pointer
 ) :
         nodeDataManager(nodeDataManager),
         infoGain(infoGain),
