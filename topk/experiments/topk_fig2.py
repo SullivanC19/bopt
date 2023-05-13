@@ -116,14 +116,26 @@ if __name__ == '__main__':
     dataset = None
     if data_idx < len(CATEGORICAL_DATASETS):
         dataset = CATEGORICAL_DATASETS[data_idx]
+        print(dataset, seed)
+        if os.path.exists(TREE_AND_RESULTS_PATH.format(dataset=dataset, k=KS[0], maxdepth=MAXDEPTHS[0], seed=seed)):
+            print("Already done")
+            exit()
         data = load_data(CATEGORICAL_DATA_PATH, dataset, seed=seed)
     elif data_idx < len(CATEGORICAL_DATASETS) + len(NUMERICAL_DATASETS):
         data_idx -= len(CATEGORICAL_DATASETS)
         dataset = NUMERICAL_DATASETS[data_idx]
+        print(dataset, seed)
+        if os.path.exists(TREE_AND_RESULTS_PATH.format(dataset=dataset, k=KS[0], maxdepth=MAXDEPTHS[0], seed=seed)):
+            print("Already done")
+            exit()
         data = load_data_numerical(NUMERICAL_DATA_PATH, dataset, seed=seed)
     elif data_idx < len(CATEGORICAL_DATASETS) + len(NUMERICAL_DATASETS) + len(TEST_TRAIN_DATASETS):
         data_idx -= len(CATEGORICAL_DATASETS) + len(NUMERICAL_DATASETS)
         dataset = TEST_TRAIN_DATASETS[data_idx]
+        print(dataset, seed)
+        if os.path.exists(TREE_AND_RESULTS_PATH.format(dataset=dataset, k=KS[0], maxdepth=MAXDEPTHS[0], seed=seed)):
+            print("Already done")
+            exit()
         data = load_data_numerical_tt_split(TEST_TRAIN_DATA_PATH, dataset, max_splits=100)
         if seed != SEEDS[0]:
             exit() # train/test split won't change with seed
