@@ -118,9 +118,11 @@ if __name__ == '__main__':
         dataset = CATEGORICAL_DATASETS[data_idx]
         data = load_data(CATEGORICAL_DATA_PATH, dataset, seed=seed)
     elif data_idx < len(CATEGORICAL_DATASETS) + len(NUMERICAL_DATASETS):
+        data_idx -= len(CATEGORICAL_DATASETS)
         dataset = NUMERICAL_DATASETS[data_idx]
         data = load_data_numerical(NUMERICAL_DATA_PATH, dataset, seed=seed)
     elif data_idx < len(CATEGORICAL_DATASETS) + len(NUMERICAL_DATASETS) + len(TEST_TRAIN_DATASETS):
+        data_idx -= len(CATEGORICAL_DATASETS) + len(NUMERICAL_DATASETS)
         dataset = TEST_TRAIN_DATASETS[data_idx]
         data = load_data_numerical_tt_split(TEST_TRAIN_DATA_PATH, dataset, max_splits=100)
         if seed != SEEDS[0]:
