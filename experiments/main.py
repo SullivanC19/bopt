@@ -158,7 +158,7 @@ if __name__ == "__main__":
       parser.add_argument('--lamb', type=float, default=0.005)
       parser.add_argument('--opt_depths', type=int, nargs='+', default=[2, 3, 4, 5])
       parser.add_argument('--seed', type=int, default=42)
-      parser.add_argument('--sample_sizes', type=int, nargs='+', default=[10, 20, 40, 80, 160])
+      parser.add_argument('--sample_sizes', type=int, nargs='+', default=[10, 20, 40, 80, 160, 320, 640])
       parser.add_argument('--num_samples_taken', type=int, default=10)
       parser.add_argument('--min_samples', type=int, default=200)
       parser.add_argument('--max_features', type=int, default=50)
